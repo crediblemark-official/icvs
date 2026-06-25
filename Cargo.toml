@@ -1,0 +1,33 @@
+[package]
+name = "icvs"
+version = "0.2.0"
+edition = "2021"
+description = "InstructCanvas - DAG-based instruction format for agentic AI tools"
+authors = ["Rasyiqi"]
+license = "MIT"
+repository = "https://github.com/crediblemark-official/icvs.git"
+homepage = "https://github.com/crediblemark-official/icvs.git"
+readme = "README.md"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+
+[lib]
+name = "icvs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "icvs"
+path = "src/main.rs"
+
+[workspace]
+members = [".", "lsp", "wasm", "py"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
