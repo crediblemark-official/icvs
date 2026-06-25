@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "InstructCanvas",
+  "scopeName": "source.icvs",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#block-header" },
+    { "include": "#attributes" },
+    { "include": "#edge-attr" },
+    { "include": "#variable" }
+  ],
+  "repository": {
+    "comments": {
+      "name": "comment.line.number-sign.icvs",
+      "match": "#.*$"
+    },
+    "block-header": {
+      "name": "meta.block.header.icvs",
+      "match": "\\[(include|node|edge|target|project):\\s*(.*?)\\]",
+      "captures": {
+        "1": { "name": "keyword.control.icvs" },
+        "2": { "name": "string.unquoted.icvs" }
+      }
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.icvs",
+          "begin": "^(\\s*)(type|content|severity|trigger_on|if|then|else|resolve|ignore)\\s*=",
+          "beginCaptures": {
+            "2": { "name": "entity.other.attribute-name.icvs" }
+          },
+          "end": "$",
+          "patterns": [
+            { "include": "#string" },
+            { "include": "#bracket-list" },
+            { "include": "#variable" },
+            { "include": "#arrow" },
+            { "include": "#operator" }
+          ]
+        }
+      ]
+    },
+    "edge-attr": {
+      "name": "meta.edge.icvs",
+      "match": "(then|else)\\s*=\\s*(->\\s*\\w+)",
+      "captures": {
+        "1": { "name": "entity.other.attribute-name.icvs" },
+        "2": { "name": "keyword.operator.arrow.icvs" }
+      }
+    },
+    "string": {
+      "name": "string.quoted.double.icvs",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.icvs", "match": "\\\\." }
+      ]
+    },
+    "bracket-list": {
+      "name": "meta.bracket-list.icvs",
+      "begin": "\\[",
+      "end": "\\]",
+      "patterns": [
+        { "name": "string.unquoted.icvs", "match": "[\\w-]+" }
+      ]
+    },
+    "variable": {
+      "name": "variable.other.enummember.icvs",
+      "match": "\\$[A-Z_][A-Z0-9_]*"
+    },
+    "arrow": {
+      "name": "keyword.operator.arrow.icvs",
+      "match": "->"
+    },
+    "operator": {
+      "name": "keyword.operator.comparison.icvs",
+      "match": "==|!=|>=|<=|>|<"
+    }
+  }
+}

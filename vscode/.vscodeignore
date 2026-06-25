@@ -1,0 +1,7 @@
+node_modules/**
+.git/**
+.gitignore
+tsconfig.json
+src/*.ts
+!src/*.js
+media/**

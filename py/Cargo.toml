@@ -1,0 +1,16 @@
+[package]
+name = "instructcanvas"
+version = "0.2.0"
+edition = "2021"
+description = "Python bindings for InstructCanvas (.icvs) parser"
+license = "MIT"
+repository = "https://github.com/anomalyco/icvs"
+
+[lib]
+name = "instructcanvas"
+crate-type = ["cdylib"]
+
+[dependencies]
+icvs = { path = ".." }
+pyo3 = { version = "0.22", features = ["extension-module"] }
+serde_json = "1"

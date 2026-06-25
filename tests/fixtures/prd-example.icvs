@@ -1,0 +1,44 @@
+#project: "my-api"
+
+[node: coding_style]
+  type = rule
+  content = "Use 2-space indentation, semicolons required"
+  severity = must
+
+[node: forbidden_libs]
+  type = blocklist
+  content = "lodash, moment.js, jquery"
+  trigger_on = import
+
+[node: prod_rule]
+  type = condition
+  if = $BRANCH == "main"
+    then = -> strict_lint
+    else = -> relaxed_lint
+
+[node: strict_lint]
+  type = rule
+  content = "Run full linter with all rules enabled"
+  severity = must
+
+[node: relaxed_lint]
+  type = rule
+  content = "Run basic linter only"
+  severity = should
+
+[node: test_action]
+  type = action
+  content = "Run `npm test` before every commit"
+
+[edge: coding_style -> forbidden_libs]
+[edge: forbidden_libs -> prod_rule]
+[edge: prod_rule -> strict_lint]
+[edge: prod_rule -> relaxed_lint]
+[edge: strict_lint -> test_action]
+
+[target: claude]
+  resolve = [coding_style, forbidden_libs, prod_rule, strict_lint, relaxed_lint, test_action]
+
+[target: copilot]
+  resolve = [coding_style, forbidden_libs]
+  ignore = [forbidden_libs]

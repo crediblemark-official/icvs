@@ -1,0 +1,21 @@
+/target
+
+# Python bindings
+py/target/
+py/Cargo.lock
+__pycache__/
+*.pyc
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if any)
+node_modules/

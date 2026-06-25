@@ -1,0 +1,20 @@
+[node: prod_check]
+  type = condition
+  if = $BRANCH == "main"
+    then = -> strict_lint
+    else = -> relaxed_lint
+
+[node: strict_lint]
+  type = rule
+  content = "Run full linter with all rules"
+  severity = must
+
+[node: relaxed_lint]
+  type = rule
+  content = "Run basic linter only"
+  severity = should
+
+[edge: strict_lint -> relaxed_lint]
+
+[target: all]
+  resolve = [prod_check, strict_lint, relaxed_lint]

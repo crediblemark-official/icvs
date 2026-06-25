@@ -1,0 +1,5 @@
+[include: "./nonexistent-file.icvs"]
+
+[node: orphan]
+  type = rule
+  content = "Alone"

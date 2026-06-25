@@ -1,0 +1,5 @@
+[include: "./include-circular-b.icvs"]
+
+[node: node_a]
+  type = rule
+  content = "Node A"

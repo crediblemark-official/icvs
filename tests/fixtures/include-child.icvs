@@ -1,0 +1,7 @@
+[node: child_node]
+  type = rule
+  content = "Child-level rule from included file"
+  severity = should
+
+[target: child_only]
+  resolve = [child_node]

@@ -1,0 +1,13 @@
+[build-system]
+requires = ["maturin>=1.0"]
+build-backend = "maturin"
+
+[project]
+name = "instructcanvas"
+version = "0.2.0"
+description = "InstructCanvas - DAG-based instruction format for agentic AI tools"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

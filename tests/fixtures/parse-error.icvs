@@ -1,0 +1,9 @@
+[node: valid]
+  type = rule
+  content = "Valid node"
+
+stray text without block
+
+[node: another]
+  type = rule
+  content = "Another node"

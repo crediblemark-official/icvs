@@ -1,0 +1,13 @@
+#project: "included-project"
+
+[include: "./include-child.icvs"]
+
+[node: root_node]
+  type = rule
+  content = "Root-level rule"
+  severity = must
+
+[edge: root_node -> child_node]
+
+[target: all]
+  resolve = [root_node, child_node]

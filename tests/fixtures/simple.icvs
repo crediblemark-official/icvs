@@ -1,0 +1,26 @@
+#project: "my-api"
+
+[node: coding_style]
+  type = rule
+  content = "Use 2-space indentation"
+  severity = must
+
+[node: forbidden_libs]
+  type = blocklist
+  content = "lodash, moment.js"
+  trigger_on = import
+
+[node: testing_rule]
+  type = rule
+  content = "All functions must have unit tests"
+  severity = must
+
+[edge: coding_style -> forbidden_libs]
+[edge: forbidden_libs -> testing_rule]
+
+[target: claude]
+  resolve = [coding_style, forbidden_libs, testing_rule]
+
+[target: copilot]
+  resolve = [coding_style]
+  ignore = [forbidden_libs]

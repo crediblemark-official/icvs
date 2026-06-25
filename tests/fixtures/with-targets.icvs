@@ -1,0 +1,22 @@
+[node: style]
+  type = rule
+  content = "Use Prettier for formatting"
+  severity = should
+
+[node: security]
+  type = rule
+  content = "No secrets in code"
+  severity = must
+
+[node: lint]
+  type = action
+  content = "Run eslint before commit"
+
+[edge: style -> security]
+[edge: security -> lint]
+
+[target: claude]
+  resolve = [style, security, lint]
+
+[target: cursor]
+  resolve = [style, lint]

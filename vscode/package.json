@@ -1,0 +1,97 @@
+{
+  "name": "instructcanvas",
+  "displayName": "InstructCanvas",
+  "description": "InstructCanvas (.icvs) support - DAG-based instruction format for agentic AI tools",
+  "version": "0.2.0",
+  "publisher": "instructcanvas",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization",
+    "Linters"
+  ],
+  "keywords": [
+    "icvs",
+    "instructcanvas",
+    "ai",
+    "agent",
+    "instructions"
+  ],
+  "activationEvents": [
+    "onLanguage:icvs",
+    "onCommand:icvs.validate",
+    "onCommand:icvs.exportMarkdown",
+    "onCommand:icvs.showGraph"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "icvs",
+        "aliases": [
+          "InstructCanvas",
+          "icvs"
+        ],
+        "extensions": [
+          ".icvs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "icvs",
+        "scopeName": "source.icvs",
+        "path": "./syntaxes/icvs.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "icvs.validate",
+        "title": "InstructCanvas: Validate File"
+      },
+      {
+        "command": "icvs.exportMarkdown",
+        "title": "InstructCanvas: Export to Markdown"
+      },
+      {
+        "command": "icvs.showGraph",
+        "title": "InstructCanvas: Show Graph Preview"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "icvs.validate",
+        "key": "ctrl+shift+v",
+        "when": "editorLangId == icvs"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "icvs.validate",
+          "group": "navigation",
+          "when": "editorLangId == icvs"
+        },
+        {
+          "command": "icvs.showGraph",
+          "group": "navigation",
+          "when": "editorLangId == icvs"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./tsconfig.json",
+    "watch": "tsc -watch -p ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

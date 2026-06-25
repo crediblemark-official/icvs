@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InstructCanvas Preview</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff; --surface:#f5f5f8; --border:#e0e0e8;
+  --text:#1a1a2e; --text-dim:#707088; --accent:#4A90D9;
+  --red:#D94A4A; --green:#30b830;   --yellow:#b8860b; --purple:#7d3c9e;
+  --blue:#4A90D9; --font:'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+header h1{font-size:14px;font-weight:600;color:var(--accent)}
+header .badge{font-size:10px;background:var(--accent);color:var(--bg);padding:2px 8px;border-radius:4px;font-weight:600}
+header .spacer{flex:1}
+header button{background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-family:var(--font)}
+header button:hover{background:var(--accent);color:var(--bg)}
+header .status{font-size:11px;color:var(--text-dim)}
+header .status.ok{color:var(--green)}
+header .status.err{color:var(--red)}
+.main{display:flex;flex:1;overflow:hidden}
+.panel{display:flex;flex-direction:column;overflow:hidden}
+.panel-source{width:40%;border-right:1px solid var(--border);min-width:300px}
+.panel-graph{flex:1;position:relative}
+.panel-header{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim);flex-shrink:0}
+.panel-header span{font-weight:600;color:var(--text)}
+textarea{flex:1;width:100%;padding:12px;background:var(--bg);border:none;color:var(--text);font-size:13px;font-family:var(--font);line-height:1.6;resize:none;outline:none;tab-size:2}
+textarea::placeholder{color:var(--text-dim)}
+#graph-svg{width:100%;height:100%;cursor:grab;background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:24px 24px}
+#graph-svg:active{cursor:grabbing}
+.node-rect{cursor:pointer;transition:stroke-width .15s,opacity .15s}
+.node-rect:hover{stroke-width:3px;opacity:.85}
+.node-label{font-size:12px;font-weight:600;fill:var(--text);pointer-events:none;user-select:none}
+.node-sublabel{font-size:9px;fill:var(--text-dim);pointer-events:none;user-select:none}
+.edge-path{fill:none;stroke:var(--text-dim);stroke-width:1.5;stroke-opacity:.8}
+.edge-label{font-size:9px;fill:var(--text-dim);pointer-events:none}
+.edge-arrow{fill:var(--text-dim);stroke:var(--text-dim);stroke-width:1;stroke-opacity:.8}
+
+/* Detail panel */
+.detail-panel{position:absolute;bottom:12px;right:12px;width:320px;max-height:50%;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.detail-panel.open{display:flex}
+.detail-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)}
+.detail-header h3{font-size:13px;font-weight:600}
+.detail-header button{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:0 4px}
+.detail-header button:hover{color:var(--text)}
+.detail-body{padding:12px;overflow-y:auto;font-size:12px;line-height:1.8}
+.detail-body .row{display:flex;gap:8px;padding:2px 0}
+.detail-body .key{color:var(--text-dim);min-width:80px;flex-shrink:0}
+.detail-body .val{color:var(--text);word-break:break-word}
+.detail-body .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600}
+.tag-rule{background:var(--blue);color:#fff}
+.tag-blocklist{background:var(--red);color:#fff}
+.tag-allowlist{background:var(--green);color:var(--bg)}
+.tag-condition{background:var(--yellow);color:#fff}
+.tag-action{background:var(--purple);color:#fff}
+
+/* Legend */
+.legend{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-dim);background:var(--surface);padding:3px 8px;border-radius:4px;border:1px solid var(--border)}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);padding:8px 20px;border-radius:6px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+
+/* Resize handle */
+.resize-handle{width:4px;cursor:col-resize;background:transparent;flex-shrink:0;position:relative;z-index:10}
+.resize-handle:hover,.resize-handle.active{background:var(--accent)}
+
+@media(max-width:768px){
+  .main{flex-direction:column}
+  .panel-source{width:100%!important;min-width:0;height:40%;border-right:none;border-bottom:1px solid var(--border)}
+  .resize-handle{width:100%;height:4px;cursor:row-resize}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>◈ InstructCanvas</h1>
+  <span class="badge">Preview</span>
+  <div class="spacer"></div>
+  <span class="status" id="status">ready</span>
+  <button onclick="validateDoc()">Validate</button>
+  <button onclick="loadExample()">Load Example</button>
+  <button onclick="exportSVG()">Export SVG</button>
+  <button onclick="exportMD()">Export MD</button>
+  <button onclick="exportAgent('claude')">Claude</button>
+  <button onclick="exportAgent('openai')">OpenAI</button>
+  <button onclick="exportAgent('json')">JSON</button>
+  <input id="template-vars" type="text" placeholder="{{ VAR }}=value;..." title="Template variables" style="width:160px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font:10px var(--font);background:var(--bg);color:var(--text)" />
+  <button onclick="applyTpl()">Tpl</button>
+</header>
+
+<div class="main">
+  <div class="panel panel-source" id="source-panel">
+    <div class="panel-header"><span>Source</span> <span>.icvs</span></div>
+    <textarea id="source" placeholder="Paste .icvs content here, or drag & drop a file..."></textarea>
+  </div>
+  <div class="resize-handle" id="resize-handle"></div>
+  <div class="panel panel-graph">
+    <div class="panel-header"><span>Graph</span><span id="graph-info" style="margin-left:auto"></span></div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <svg id="graph-svg"></svg>
+      <div class="legend" id="legend"></div>
+      <div class="detail-panel" id="detail-panel">
+        <div class="detail-header">
+          <h3 id="detail-title">Node</h3>
+          <button onclick="closeDetail()">&times;</button>
+        </div>
+        <div class="detail-body" id="detail-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── WASM Loader ──
+let wasm = null;
+async function loadWasm() {
+  try {
+    const resp = await fetch('../wasm/pkg/icvs_wasm.js');
+    const code = await resp.text();
+    const func = new Function('module', code);
+    const m = { exports: {} };
+    const wasmResp = await fetch('../wasm/pkg/icvs_wasm_bg.wasm');
+    m.exports = await WebAssembly.instantiate(await wasmResp.arrayBuffer());
+    func(m);
+    wasm = m.exports;
+    return true;
+  } catch(e) {
+    console.warn('WASM load failed, using JS fallback:', e.message);
+    return false;
+  }
+}
+
+// ── Simple JS parser fallback ──
+function parseFallback(text) {
+  const nodes = {}, edges = [], targets = {};
+  let projectName = null;
+  let currentNode = null;
+
+  text.split('\n').forEach(line => {
+    const t = line.trim();
+    if (!t || (t.startsWith('#') && !t.startsWith('#project:'))) return;
+
+    const nodeMatch = t.match(/^\[node:\s*([\w-]+)\]/);
+    const edgeMatch = t.match(/^\[edge:\s*([\w-]+)\s*->\s*([\w-]+)(?:\s+with\s+"([^"]*)")?\]/);
+    const targetMatch = t.match(/^\[target:\s*([\w-]+)\]/);
+    const includeMatch = t.match(/^\[include:\s*"([^"]+)"\]/);
+    const projectMatch = t.match(/^#project:\s*"([^"]+)"/);
+    const attrMatch = t.match(/^\s*(\w+)\s*=\s*(.+)$/);
+
+    if (projectMatch) { projectName = projectMatch[1]; return; }
+    if (includeMatch) return;
+    if (nodeMatch) {
+      currentNode = { id: nodeMatch[1], type: 'rule', content: '', severity: null, condition: null, trigger: null };
+      nodes[nodeMatch[1]] = currentNode;
+      return;
+    }
+    if (edgeMatch) { edges.push({ source: edgeMatch[1], target: edgeMatch[2], label: edgeMatch[3] || undefined }); return; }
+    if (targetMatch) {
+      targets[targetMatch[1]] = { name: targetMatch[1], resolve: [], ignore: [] };
+      return;
+    }
+    if (attrMatch && currentNode) {
+      const [_, key, val] = attrMatch;
+      if (key === 'type') currentNode.type = val;
+      else if (key === 'content') currentNode.content = val.replace(/^"(.*)"$/, '$1');
+      else if (key === 'severity') currentNode.severity = val;
+      else if (key === 'trigger_on') currentNode.trigger = val;
+      else if (key === 'if') {
+        const cond = val.match(/^\$(\w+)\s*(==|!=|>=|<=|>|<)\s*(.+)$/);
+        if (cond) currentNode.condition = { var: cond[1], op: cond[2], val: cond[3].replace(/^"(.*)"$/, '$1'), then: '', else: '' };
+      } else if (key === 'then') { const m = val.match(/->\s*([\w-]+)/); if (m && currentNode.condition) currentNode.condition.then = m[1]; }
+      else if (key === 'else') { const m = val.match(/->\s*([\w-]+)/); if (m && currentNode.condition) currentNode.condition.else = m[1]; }
+      else if (key === 'resolve' || key === 'ignore') {
+        const list = val.replace(/^\[(.*)\]$/, '$1').split(',').map(s => s.trim()).filter(Boolean);
+        const lastTarget = Object.values(targets).pop();
+        if (lastTarget) lastTarget[key] = list;
+      }
+    } else if (attrMatch && !currentNode) {
+      // multi-line target resolve/ignore continuation
+      const lastTarget = Object.values(targets).pop();
+      if (lastTarget) {
+        const [_, key, val] = attrMatch;
+        if (key === 'resolve' || key === 'ignore') {
+          const items = val.replace(/^\[(.*)\]$/, '$1').split(',').map(s => s.trim()).filter(Boolean);
+          lastTarget[key] = [...(lastTarget[key]||[]), ...items];
+        }
+      }
+    }
+  });
+
+  // Add implicit condition edges
+  Object.values(nodes).forEach(n => {
+    if (n.condition && n.condition.then) edges.push({ source: n.id, target: n.condition.then, label: 'true' });
+    if (n.condition && n.condition.else) edges.push({ source: n.id, target: n.condition.else, label: 'false' });
+  });
+
+  return { projectName, nodes: Object.values(nodes), edges, targets: Object.values(targets) };
+}
+
+// ── Parse ──
+function parseDoc(text) {
+  if (wasm) {
+    try {
+      const jsonStr = wasm.parse(text);
+      if (typeof jsonStr === 'string') {
+        const d = JSON.parse(jsonStr);
+        return { projectName: d.project_name, nodes: d.nodes, edges: d.edges, targets: d.targets };
+      }
+    } catch(e) { /* fall through */ }
+  }
+  return parseFallback(text);
+}
+
+const COLORS = {
+  rule: { fill: '#4A90D9', stroke: '#3578b8' },
+  blocklist: { fill: '#D94A4A', stroke: '#b83030' },
+  allowlist: { fill: '#4AD94A', stroke: '#30b830' },
+  condition: { fill: '#D4A830', stroke: '#b89020' },
+  action: { fill: '#9B59B6', stroke: '#7d3c9e' },
+};
+
+let graphData = null;
+let simulation = null;
+
+function renderGraph(data) {
+  graphData = data;
+  const svg = d3.select('#graph-svg');
+  svg.selectAll('*').remove();
+  document.getElementById('graph-info').textContent =
+    `${data.nodes.length} nodes · ${data.edges.length} edges` + (data.targets?.length ? ` · ${data.targets.length} targets` : '');
+  updateStatus(data.nodes.length > 0 ? 'ok' : '', data.nodes.length > 0 ? `${data.nodes.length} nodes parsed` : 'empty');
+
+  if (data.nodes.length === 0) return;
+
+  const container = svg.node().parentElement;
+  const W = container.clientWidth || 800;
+  const H = container.clientHeight || 600;
+  svg.attr('viewBox', [0, 0, W, H]);
+
+  // Node colors
+  data.nodes.forEach(n => { const c = COLORS[n.type] || COLORS.rule; n.color = c; });
+
+  // Arrows
+  svg.append('defs').selectAll('marker')
+    .data(['arrow', 'arrow-true', 'arrow-false'])
+    .join('marker')
+    .attr('id', d => d)
+    .attr('viewBox', '0 -5 10 10')
+    .attr('refX', 22)
+    .attr('refY', 0)
+    .attr('markerWidth', 6)
+    .attr('markerHeight', 6)
+    .attr('orient', 'auto')
+    .append('path')
+    .attr('d', 'M0,-5L10,0L0,5')
+    .attr('fill', d => d === 'arrow-true' ? '#a6e3a1' : d === 'arrow-false' ? '#f38ba8' : '#6c7086');
+
+  // Edges
+  const edgeGroup = svg.append('g');
+  const edgePaths = edgeGroup.selectAll('path')
+    .data(data.edges)
+    .join('path')
+    .attr('class', 'edge-path')
+    .attr('stroke', d => d.label === 'true' ? '#a6e3a1' : d.label === 'false' ? '#f38ba8' : '#6c7086')
+    .attr('marker-end', d => d.label === 'true' ? 'url(#arrow-true)' : d.label === 'false' ? 'url(#arrow-false)' : 'url(#arrow)');
+
+  const edgeLabels = edgeGroup.selectAll('text')
+    .data(data.edges.filter(d => d.label))
+    .join('text')
+    .attr('class', 'edge-label')
+    .text(d => d.label);
+
+  // Nodes
+  const nodeGroup = svg.append('g');
+  const nodeRects = nodeGroup.selectAll('g')
+    .data(data.nodes)
+    .join('g')
+    .attr('cursor', 'pointer')
+    .on('click', (event, d) => showDetail(d));
+
+  // Node background rects (auto-sized by text)
+  nodeRects.each(function(d) {
+    const g = d3.select(this);
+    const label = d.content ? `${d.id} · ${d.content.substring(0,40)}${d.content.length>40?'…':''}` : d.id;
+    const textLen = Math.max(d.id.length, (d.content||'').substring(0,40).length);
+    const w = Math.max(80, Math.min(200, textLen * 7.5));
+    const h = d.content ? 42 : 28;
+    d._w = w; d._h = h;
+
+    const isDiamond = d.type === 'condition' || d.type === 'allowlist';
+    const rx = isDiamond ? 0 : 6;
+
+    if (isDiamond) {
+      g.append('polygon')
+        .attr('points', `${w/2},0 ${w},${h/2} ${w/2},${h} 0,${h/2}`)
+        .attr('fill', d.color.fill)
+        .attr('stroke', d.color.stroke)
+        .attr('stroke-width', 2)
+        .attr('class', 'node-rect');
+    } else {
+      g.append('rect')
+        .attr('width', w).attr('height', h).attr('rx', rx).attr('ry', rx)
+        .attr('x', -w/2).attr('y', -h/2)
+        .attr('fill', d.color.fill)
+        .attr('stroke', d.color.stroke)
+        .attr('stroke-width', 2)
+        .attr('class', 'node-rect');
+    }
+
+    g.append('text')
+      .attr('class', 'node-label')
+      .attr('text-anchor', 'middle')
+      .attr('dy', d.content ? '-0.3em' : '0.35em')
+      .text(d.id);
+
+    if (d.content) {
+      const sub = d.content.length > 35 ? d.content.substring(0, 32) + '…' : d.content;
+      g.append('text')
+        .attr('class', 'node-sublabel')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '1.2em')
+        .text(sub);
+    }
+  });
+
+  // Force simulation
+  simulation = d3.forceSimulation(data.nodes)
+    .force('link', d3.forceLink(data.edges).id(d => d.id).distance(120))
+    .force('charge', d3.forceManyBody().strength(-400))
+    .force('center', d3.forceCenter(W / 2, H / 2))
+    .force('collision', d3.forceCollide(d => Math.max(d._w, d._h) / 2 + 20))
+    .on('tick', () => {
+      nodeRects.attr('transform', d => `translate(${d.x},${d.y})`);
+      edgePaths.attr('d', d => {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const nx = dx / dist, ny = dy / dist;
+        const r = 20;
+        return `M${d.source.x + nx * r},${d.source.y + ny * r}L${d.target.x - nx * r},${d.target.y - ny * r}`;
+      });
+      edgeLabels.attr('transform', d => {
+        const mx = (d.source.x + d.target.x) / 2;
+        const my = (d.source.y + d.target.y) / 2;
+        return `translate(${mx},${my - 6})`;
+      });
+    });
+
+  // Zoom
+  svg.call(d3.zoom()
+    .scaleExtent([0.2, 5])
+    .on('zoom', (event) => {
+      nodeGroup.attr('transform', event.transform);
+      edgeGroup.attr('transform', event.transform);
+    })
+  );
+
+  // Update legend
+  updateLegend(data.nodes);
+}
+
+function updateLegend(nodes) {
+  const types = [...new Set(nodes.map(n => n.type))];
+  const labels = { rule: 'Rule', blocklist: 'Blocklist', allowlist: 'Allowlist', condition: 'Condition', action: 'Action' };
+  d3.select('#legend').selectAll('.legend-item').remove();
+  d3.select('#legend').selectAll('.legend-item')
+    .data(types).join('div')
+    .attr('class', 'legend-item')
+    .html(d => `<span class="legend-dot" style="background:${COLORS[d]?.fill||'#888'}"></span>${labels[d]||d}`);
+}
+
+// ── Detail Panel ──
+function showDetail(node) {
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('open');
+  document.getElementById('detail-title').textContent = node.id;
+
+  const body = document.getElementById('detail-body');
+  let html = `<div class="row"><span class="key">Type</span><span class="val"><span class="tag tag-${node.type}">${node.type}</span></span></div>`;
+  if (node.content) html += `<div class="row"><span class="key">Content</span><span class="val">${escHtml(node.content)}</span></div>`;
+  if (node.severity) html += `<div class="row"><span class="key">Severity</span><span class="val">${node.severity}</span></div>`;
+  if (node.trigger) html += `<div class="row"><span class="key">Trigger</span><span class="val">${node.trigger}</span></div>`;
+  if (node.condition) {
+    html += `<div class="row"><span class="key">Condition</span><span class="val">$${node.condition.var} ${node.condition.op} "${node.condition.val}"</span></div>`;
+    if (node.condition.then) html += `<div class="row"><span class="key">Then</span><span class="val" style="color:var(--green)">→ ${node.condition.then}</span></div>`;
+    if (node.condition.else) html += `<div class="row"><span class="key">Else</span><span class="val" style="color:var(--red)">→ ${node.condition.else}</span></div>`;
+  }
+
+  // Edges
+  const incoming = graphData.edges.filter(e => e.target === node.id);
+  const outgoing = graphData.edges.filter(e => e.source === node.id);
+  if (incoming.length) html += `<div class="row"><span class="key">Incoming</span><span class="val">${incoming.map(e => e.source).join(', ')}</span></div>`;
+  if (outgoing.length) html += `<div class="row"><span class="key">Outgoing</span><span class="val">${outgoing.map(e => e.target + (e.label ? ` (${e.label})` : '')).join(', ')}</span></div>`;
+
+  body.innerHTML = html;
+}
+
+function closeDetail() { document.getElementById('detail-panel').classList.remove('open'); }
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Source → Graph ──
+let debounceTimer;
+function onSourceChange() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const text = document.getElementById('source').value;
+    if (!text.trim()) { updateStatus('', 'awaiting input'); return; }
+    try {
+      const data = parseDoc(text);
+      renderGraph(data);
+    } catch(e) { updateStatus('err', e.message); }
+  }, 300);
+}
+
+// ── Status ──
+function updateStatus(type, msg) {
+  const el = document.getElementById('status');
+  el.className = 'status' + (type ? ' ' + type : '');
+  el.textContent = msg || '';
+}
+
+// ── Toast ──
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._timer); el._timer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── Export SVG ──
+function exportSVG() {
+  const svg = document.getElementById('graph-svg');
+  const clone = svg.cloneNode(true);
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(clone);
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  download(blob, 'graph.svg');
+  toast('SVG exported');
+}
+
+function exportMD() {
+  const text = document.getElementById('source').value;
+  if (!text.trim()) return toast('Nothing to export');
+  try {
+    let md;
+    if (wasm && wasm.export_merge) {
+      md = wasm.export_merge(text);
+    } else {
+      md = fallbackExportMD(text);
+    }
+    const blob = new Blob([md], { type: 'text/markdown' });
+    download(blob, 'instructions.md');
+    toast('Markdown exported');
+  } catch(e) { toast('Export error: ' + e.message); }
+}
+
+function validateDoc() {
+  const text = document.getElementById('source').value;
+  if (!text.trim()) return toast('Nothing to validate');
+  try {
+    let result;
+    if (wasm && wasm.validate) {
+      result = JSON.parse(wasm.validate(text));
+    } else {
+      const data = parseDoc(text);
+      const errors = [];
+      const ids = new Set(data.nodes.map(n => n.id));
+      data.edges.forEach(e => {
+        if (!ids.has(e.source)) errors.push(`Edge source "${e.source}" not found`);
+        if (!ids.has(e.target)) errors.push(`Edge target "${e.target}" not found`);
+      });
+      data.nodes.forEach(n => {
+        if (n.condition) {
+          if (n.condition.then && !ids.has(n.condition.then)) errors.push(`Condition then "${n.condition.then}" not found in node "${n.id}"`);
+          if (n.condition.else && !ids.has(n.condition.else)) errors.push(`Condition else "${n.condition.else}" not found in node "${n.id}"`);
+        }
+      });
+      result = { is_valid: errors.length === 0, errors, node_count: data.nodes.length, edge_count: data.edges.length, warnings: [], orphan_nodes: [] };
+    }
+    updateStatus(result.is_valid ? 'ok' : 'err', result.is_valid ? `Valid: ${result.node_count} nodes, ${result.edge_count} edges` : `Invalid: ${result.errors.length} error(s)`);
+    if (!result.is_valid) result.errors.forEach(e => toast(e));
+  } catch(e) { updateStatus('err', e.message); }
+}
+
+function fallbackExportMD(text) {
+  if (!graphData) return '# InstructCanvas\n\n_No data_';
+  let md = '# InstructCanvas\n\n';
+  if (graphData.projectName) md += `## ${graphData.projectName}\n\n`;
+  graphData.nodes.forEach(n => {
+    md += `### ${n.id}\n\n`;
+    md += `_Type: ${n.type}_  \n`;
+    if (n.severity) md += `_Severity: ${n.severity}_  \n`;
+    if (n.trigger) md += `_Trigger: ${n.trigger}_  \n`;
+    md += '\n';
+    if (n.content) md += n.content + '\n\n';
+    if (n.condition) {
+      md += `- **If** \`\$${n.condition.var}\` ${n.condition.op} \`"${n.condition.val}"\`  \n`;
+      if (n.condition.then) md += `  - **Then** → \`${n.condition.then}\`\n`;
+      if (n.condition.else) md += `  - **Else** → \`${n.condition.else}\`\n`;
+      md += '\n';
+    }
+    const incoming = graphData.edges.filter(e => e.target === n.id);
+    const outgoing = graphData.edges.filter(e => e.source === n.id);
+    if (incoming.length) md += '**Depends on:**\n' + incoming.map(e => `- \`${e.source}\``).join('\n') + '\n\n';
+    if (outgoing.length) md += '**Required by:**\n' + outgoing.map(e => `- \`${e.target}\``).join('\n') + '\n\n';
+    md += '---\n\n';
+  });
+  return md;
+}
+
+function exportAgent(format) {
+  const text = document.getElementById('source').value;
+  if (!text.trim()) return toast('Nothing to export');
+  try {
+    let json;
+    if (wasm && wasm.convert_agent) {
+      json = wasm.convert_agent(text, format);
+    } else {
+      json = fallbackExportAgent(text, format);
+    }
+    const blob = new Blob([typeof json === 'string' ? json : JSON.stringify(json, null, 2)], { type: 'application/json' });
+    download(blob, `icvs-${format}.json`);
+    toast(`Exported as ${format}`);
+  } catch(e) { toast('Convert error: ' + e.message); }
+}
+
+function fallbackExportAgent(text, format) {
+  const data = parseFallback(text);
+  const tools = data.nodes.map(n => ({
+    name: n.id,
+    description: n.content || '',
+    tool_type: n.type,
+    severity: n.severity,
+    trigger: n.trigger,
+    depends_on: data.edges.filter(e => e.target === n.id).map(e => e.source),
+    required_by: data.edges.filter(e => e.source === n.id).map(e => e.target),
+  }));
+  if (format === 'json' || format === 'generic') {
+    return JSON.stringify({ format: 'instructcanvas', version: '0.2.0', tools }, null, 2);
+  }
+  if (format === 'openai') {
+    return JSON.stringify({
+      tools: tools.map(t => ({
+        type: 'function',
+        function: { name: t.name, description: t.description, strict: true, parameters: { type: 'object', properties: { action: { type: 'string', enum: [t.tool_type] } }, required: ['action'], additionalProperties: false } }
+      })),
+      tool_choice: 'auto'
+    }, null, 2);
+  }
+  // claude
+  return JSON.stringify({
+    tools: tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      input_schema: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: [t.tool_type] },
+          ...(t.severity ? { severity: { type: 'string', enum: ['must', 'should', 'may'] } } : {}),
+          ...(t.depends_on.length ? { depends_on: { type: 'array', items: { type: 'string' } } } : {}),
+        },
+        required: ['action']
+      }
+    })),
+    system: `You are following a DAG-based instruction set with ${tools.length} rules.`
+  }, null, 2);
+}
+
+function applyTpl() {
+  const text = document.getElementById('source').value;
+  if (!text.trim()) return toast('Nothing to template');
+  const varsInput = document.getElementById('template-vars').value.trim();
+  if (!varsInput) return toast('Enter template vars: VAR=value;...');
+  const vars = {};
+  varsInput.split(';').filter(Boolean).forEach(pair => {
+    const eq = pair.indexOf('=');
+    if (eq > 0) vars[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  });
+  if (Object.keys(vars).length === 0) return toast('No valid vars (use VAR=value;...)');
+  try {
+    let result;
+    if (wasm && wasm.apply_template) {
+      const jsonStr = wasm.apply_template(text, JSON.stringify(vars));
+      const parsed = JSON.parse(jsonStr);
+      // Reconstruct .icvs from parsed JSON
+      result = jsonToIcvs(parsed);
+    } else {
+      result = fallbackApplyTemplate(text, vars);
+    }
+    document.getElementById('source').value = result;
+    onSourceChange();
+    toast('Template applied');
+  } catch(e) { toast('Template error: ' + e.message); }
+}
+
+function fallbackApplyTemplate(text, vars) {
+  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, name) => vars[name] || `{{ ${name} }}`);
+}
+
+function jsonToIcvs(data) {
+  let out = '';
+  if (data.project_name) out += `#project: "${data.project_name}"\n`;
+  (data.nodes || []).forEach(n => {
+    out += `\n[node: ${n.id}]\n  type = ${n.type}\n`;
+    if (n.content) out += `  content = "${n.content}"\n`;
+    if (n.severity) out += `  severity = ${n.severity}\n`;
+    if (n.trigger_on) out += `  trigger_on = ${n.trigger_on}\n`;
+    if (n.condition) {
+      out += `  if = $${n.condition.variable||n.condition.var} ${n.condition.operator||n.condition.op} "${n.condition.value||n.condition.val}"\n`;
+      if (n.condition.then_node||n.condition.then) out += `  then = -> ${n.condition.then_node||n.condition.then}\n`;
+      if (n.condition.else_node||n.condition.else) out += `  else = -> ${n.condition.else_node||n.condition.else}\n`;
+    }
+  });
+  (data.edges || []).forEach(e => out += `\n[edge: ${e.source} -> ${e.target}]\n`);
+  (data.targets || []).forEach(t => {
+    out += `\n[target: ${t.name}]\n`;
+    if (t.resolve && t.resolve.length) out += `  resolve = [${t.resolve.map(s => `"${s}"`).join(', ')}]\n`;
+    if (t.ignore && t.ignore.length) out += `  ignore = [${t.ignore.map(s => `"${s}"`).join(', ')}]\n`;
+  });
+  return out;
+}
+
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Example ──
+const EXAMPLE = `#project: "my-api"
+
+[node: coding_style]
+  type = rule
+  content = "Use 2-space indentation, semicolons required"
+  severity = must
+
+[node: forbidden_libs]
+  type = blocklist
+  content = "lodash, moment.js, jquery"
+  trigger_on = import
+
+[node: prod_check]
+  type = condition
+  if = $BRANCH == "main"
+    then = -> strict_lint
+    else = -> relaxed_lint
+
+[node: strict_lint]
+  type = rule
+  content = "Run full linter with all rules"
+  severity = must
+
+[node: relaxed_lint]
+  type = rule
+  content = "Run basic linter only"
+  severity = should
+
+[node: run_tests]
+  type = action
+  content = "Run npm test before commit"
+
+[edge: coding_style -> forbidden_libs]
+[edge: forbidden_libs -> prod_check]
+[edge: strict_lint -> run_tests]
+
+[target: claude]
+  resolve = [coding_style, forbidden_libs, prod_check, strict_lint, relaxed_lint, run_tests]
+
+[target: copilot]
+  resolve = [coding_style]
+  ignore = [forbidden_libs]
+`;
+
+function loadExample() {
+  document.getElementById('source').value = EXAMPLE;
+  onSourceChange();
+  toast('Example loaded');
+}
+
+// ── Drag & Drop ──
+document.getElementById('source').addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+document.getElementById('source').addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('source').value = reader.result;
+    onSourceChange();
+    toast(`Loaded: ${file.name}`);
+  };
+  reader.readAsText(file);
+});
+
+// ── Resize ──
+(function() {
+  const handle = document.getElementById('resize-handle');
+  let isDragging = false;
+  handle.addEventListener('mousedown', e => { isDragging = true; handle.classList.add('active'); e.preventDefault(); });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const pct = (e.clientX / window.innerWidth) * 100;
+    document.getElementById('source-panel').style.width = Math.max(20, Math.min(70, pct)) + '%';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; handle.classList.remove('active'); });
+})();
+
+// ── Init ──
+document.getElementById('source').addEventListener('input', onSourceChange);
+window.addEventListener('resize', onSourceChange);
+
+(async function init() {
+  await loadWasm();
+  loadExample();
+})();
+</script>
+</body>
+</html>

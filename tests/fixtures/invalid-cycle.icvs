@@ -1,0 +1,15 @@
+[node: a]
+  type = rule
+  content = "Node A"
+
+[node: b]
+  type = rule
+  content = "Node B"
+
+[node: c]
+  type = rule
+  content = "Node C"
+
+[edge: a -> b]
+[edge: b -> c]
+[edge: c -> a]
