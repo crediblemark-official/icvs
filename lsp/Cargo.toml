@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2021"
 description = "Language Server Protocol implementation for InstructCanvas (.icvs)"
 license = "MIT"
-repository = "https://github.com/anomalyco/icvs"
+repository = "https://github.com/crediblemark-official/icvs.git"
 
 [dependencies]
 icvs = { path = ".." }

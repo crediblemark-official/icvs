@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2021"
 description = "WASM bindings for InstructCanvas (.icvs) parser"
 license = "MIT"
-repository = "https://github.com/anomalyco/icvs"
+repository = "https://github.com/crediblemark-official/icvs.git"
 
 [lib]
 crate-type = ["cdylib"]
