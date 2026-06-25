@@ -376,7 +376,7 @@ dependencies = [
 
 [[package]]
 name = "icvs"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "regex",
@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "icvs-lsp"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "icvs",
  "serde",
@@ -398,7 +398,7 @@ dependencies = [
 
 [[package]]
 name = "icvs-wasm"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "icvs",
  "serde",
@@ -438,7 +438,7 @@ dependencies = [
 
 [[package]]
 name = "instructcanvas"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "icvs",
  "pyo3",

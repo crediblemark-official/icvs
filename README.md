@@ -1,12 +1,18 @@
 # InstructCanvas (.icvs)
 
+[![crates.io](https://img.shields.io/crates/v/icvs)](https://crates.io/crates/icvs)
+[![npm](https://img.shields.io/npm/v/icvs-wasm)](https://www.npmjs.com/package/icvs-wasm)
+[![PyPI](https://img.shields.io/pypi/v/instructcanvas)](https://pypi.org/project/instructcanvas/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 **Format instruksi agentic AI berbasis Directed Acyclic Graph (DAG).**
 
 InstructCanvas adalah format berkas instruksi baru (`.icvs`) yang menggantikan kelemahan fundamental Markdown untuk menginstruksikan AI coding agent. Ia merepresentasikan instruksi sebagai **DAG** dalam sintaks teks polos — mudah dibaca manusia, presisi untuk mesin.
 
-```
-npm install -g instructcanvas   # CLI
-pip install instructcanvas       # Python
+```bash
+npm install -g icvs-wasm            # WASM (browser/IDE)
+pip install instructcanvas          # Python
+cargo install icvs                  # CLI (Rust)
 ```
 
 ## Quick Start
@@ -77,6 +83,13 @@ Contoh file `.icvs` minimal:
 
 # Edge / dependency
 [edge: <source> -> <target>]
+[edge: <source> -> <target> with "label"]   # Edge dengan label
+
+# Template include (EXPERIMENTAL)
+[include: <path> @ <template>]
+
+# Template variables (diganti saat runtime)
+  content = "Use {{ FRAMEWORK }} for this"
 
 # Target tool
 [target: <tool_name>]
@@ -141,6 +154,9 @@ const md = exportMarkdown(source, 'claude');
 const dot = exportDot(source);
 const icvs = mdToIcvs(markdownSource);
 const agentTools = convertAgent(source, 'claude');
+
+// Template
+const result = applyTemplate(source, '{"FRAMEWORK": "React"}');
 ```
 
 ## Dokumentasi Lengkap
@@ -153,8 +169,8 @@ const agentTools = convertAgent(source, 'claude');
 ## Development
 
 ```bash
-git clone https://github.com/your-org/instructcanvas
-cd instructcanvas
+git clone https://github.com/crediblemark-official/icvs.git
+cd icvs
 
 # Build & test
 cargo build

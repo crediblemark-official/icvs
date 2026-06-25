@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1 (2026-06-25)
+
+### Added
+- README per platform (npm, PyPI, crates.io)
+- Tombol Validate di preview page
+- Export agent format Claude/OpenAI/JSON di preview page
+- Template variable input di preview page
+- Edge label `with "label"` support di JS fallback parser
+
+### Fixed
+- `#project:` parsing bug (dianggap komment)
+- `exportMD` WASM function name mismatch
+- Benchmark message "icvs is smaller than MD" → Expansion/Compression sesuai konteks
+
 ## 0.2.0 (2026-06-25)
 
 ### Added
