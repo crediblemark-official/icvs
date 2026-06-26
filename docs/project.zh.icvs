@@ -1,0 +1,140 @@
+#project: "instructcanvas"
+
+# ============================================================
+# InstructCanvas — .icvs 格式官方文档
+# ============================================================
+
+# ── 核心规则 ──────────────────────────────────────────────
+
+[node: core_rules]
+  type = rule
+  content = "所有 .icvs 文件必须构成有效的 DAG（有向无环图），不允许存在循环。验证器使用 DFS 检测循环。"
+  severity = must
+
+[node: naming_convention]
+  type = rule
+  content = "节点 ID：字母数字、下划线、连字符 (^[a-zA-Z0-9_-]+$)。区分大小写。"
+  severity = must
+
+[node: utf8]
+  type = rule
+  content = ".icvs 文件必须使用 UTF-8 编码，不允许包含 BOM。"
+  severity = must
+
+[node: no_hidden]
+  type = rule
+  content = "[node:]、[edge:]、[target:]、[include:] 或 #project: 块之外不允许有任何内容。"
+  severity = must
+
+# ── 节点类型 ──────────────────────────────────────────────
+
+[node: node_types]
+  type = rule
+  content = "五种节点类型：rule（编码规则）、blocklist（禁止项）、allowlist（允许项）、condition（条件逻辑）、action（代理操作）。"
+  severity = must
+
+[node: node_type_rule]
+  type = rule
+  content = "type = rule：定义编码规则。属性：content（字符串）、severity（must|should|may）。"
+  severity = should
+
+[node: node_type_blocklist]
+  type = rule
+  content = "type = blocklist：列出禁止的库/代码。属性：content、trigger_on（import|install|run）。"
+  severity = should
+
+[node: node_type_allowlist]
+  type = rule
+  content = "type = allowlist：列出允许的库/代码。属性：content、trigger_on。"
+  severity = should
+
+[node: node_type_condition]
+  type = rule
+  content = "type = condition：基于 $VARIABLE 环境变量的 if/else 逻辑。属性：if（运算符：==、!=、>=、<=、>、<）、then ->、else ->。"
+  severity = should
+
+[node: node_type_action]
+  type = rule
+  content = "type = action：代理必须执行的命令。属性：content。"
+  severity = should
+
+# ── 边与 DAG ──────────────────────────────────────────────
+
+[node: edge_definition]
+  type = rule
+  content = "[edge: source -> target] — source 必须是已定义的节点，target 也必须是已定义的节点。"
+  severity = must
+
+[node: dag_requirement]
+  type = rule
+  content = "整个图必须是 DAG（有向无环图）。循环将被拒绝并报错 'Cycle detected: a -> b -> c -> a'。"
+  severity = must
+
+[node: implicit_edges]
+  type = rule
+  content = "条件节点（then/else）会隐式创建边。不需要单独的 [edge:] 声明，但允许显式声明以增加可读性。"
+  severity = may
+
+# ── 目标系统 ──────────────────────────────────────────────
+
+[node: target_system]
+  type = rule
+  content = "[target: name] 定义工具目标。属性：resolve（包含的节点列表）、ignore（排除的节点列表）。ignore 是 resolve 的子集。"
+  severity = must
+
+[node: multi_target]
+  type = rule
+  content = "一个文件可以有多个目标。例如：[target: claude]、[target: copilot]、[target: cursor]，各自拥有不同的 resolve/ignore。"
+  severity = should
+
+# ── 包含系统 ──────────────────────────────────────────────
+
+[node: include_system]
+  type = rule
+  content = "[include: path] 导入另一个 .icvs 文件。路径相对于源文件。支持嵌套包含。"
+  severity = must
+
+[node: include_circular]
+  type = rule
+  content = "循环包含（A 包含 B，B 包含 A）会被检测到并拒绝，报错 'Circular include detected'。"
+  severity = must
+
+[node: include_merge]
+  type = rule
+  content = "包含合并规则：重复的节点 ID → 错误。重复的目标名称 → 错误。项目名称取自第一个包含该名称的文件。"
+  severity = must
+
+# ── 节点间边（依赖关系） ─────────────────────────────────
+
+[edge: naming_convention -> node_types]
+[edge: utf8 -> no_hidden]
+[edge: no_hidden -> core_rules]
+[edge: core_rules -> dag_requirement]
+[edge: dag_requirement -> edge_definition]
+[edge: edge_definition -> implicit_edges]
+[edge: node_types -> node_type_rule]
+[edge: node_types -> node_type_blocklist]
+[edge: node_types -> node_type_allowlist]
+[edge: node_types -> node_type_condition]
+[edge: node_types -> node_type_action]
+[edge: node_type_rule -> target_system]
+[edge: node_type_blocklist -> target_system]
+[edge: node_type_allowlist -> target_system]
+[edge: node_type_condition -> target_system]
+[edge: node_type_action -> target_system]
+[edge: target_system -> multi_target]
+[edge: multi_target -> include_system]
+[edge: include_system -> include_circular]
+[edge: include_circular -> include_merge]
+
+# ── 默认目标 ────────────────────────────────────────────
+
+[target: all]
+  resolve = [
+    core_rules, naming_convention, utf8, no_hidden,
+    node_types, node_type_rule, node_type_blocklist,
+    node_type_allowlist, node_type_condition, node_type_action,
+    edge_definition, dag_requirement, implicit_edges,
+    target_system, multi_target,
+    include_system, include_circular, include_merge
+  ]

@@ -1,0 +1,45 @@
+#project: "instructcanvas-quickstart"
+
+# ── Quickstart Guide ───────────────────────────────────────
+# Get started with InstructCanvas in 5 minutes.
+
+[node: install_cli]
+  type = action
+  content = "Install CLI: cargo install icvs, or download a binary from GitHub Releases."
+
+[node: create_first]
+  type = action
+  content = "Create a rules.icvs file. Minimal: [node: name] type = rule, content = '...', severity = must."
+
+[node: validate]
+  type = action
+  content = "Run: icvs validate rules.icvs. Ensure there are no errors or cycles."
+
+[node: add_edge]
+  type = action
+  content = "Add an edge: [edge: node_a -> node_b] to define the dependency graph."
+
+[node: add_target]
+  type = action
+  content = "Add a target: [target: claude] resolve = [node_a, node_b]. Export: icvs export --target claude rules.icvs > CLAUDE.md"
+
+[node: modularize]
+  type = action
+  content = "Split rules into multiple files: [include: './style.icvs'], [include: './security.icvs']"
+
+[node: add_condition]
+  type = action
+  content = "Add a conditional: [node: check] type = condition, if = $BRANCH == 'main', then = -> strict, else = -> relaxed."
+
+[edge: install_cli -> create_first]
+[edge: create_first -> validate]
+[edge: validate -> add_edge]
+[edge: add_edge -> add_target]
+[edge: add_target -> modularize]
+[edge: modularize -> add_condition]
+
+[target: beginner]
+  resolve = [
+    install_cli, create_first, validate,
+    add_edge, add_target, modularize, add_condition
+  ]

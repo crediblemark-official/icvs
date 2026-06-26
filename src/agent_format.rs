@@ -213,7 +213,7 @@ fn export_openai(tools: &[AgentTool]) -> Result<String> {
 fn export_json(tools: &[AgentTool]) -> Result<String> {
     serde_json::to_string_pretty(&serde_json::json!({
         "format": "instructcanvas",
-        "version": "0.2.1",
+        "version": "0.2.2",
         "tools": tools
     }))
     .map_err(|e| crate::error::IcvsError::Validation {

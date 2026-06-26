@@ -1,0 +1,45 @@
+#project: "instructcanvas-quickstart"
+
+# ── 快速入门指南 ─────────────────────────────────────────
+# 在 5 分钟内开始使用 InstructCanvas。
+
+[node: install_cli]
+  type = action
+  content = "安装 CLI：cargo install icvs，或从 GitHub Releases 下载二进制文件。"
+
+[node: create_first]
+  type = action
+  content = "创建 rules.icvs 文件。最小示例：[node: name] type = rule, content = '...', severity = must。"
+
+[node: validate]
+  type = action
+  content = "运行：icvs validate rules.icvs。确保没有错误或循环。"
+
+[node: add_edge]
+  type = action
+  content = "添加边：[edge: node_a -> node_b] 来定义依赖图。"
+
+[node: add_target]
+  type = action
+  content = "添加目标：[target: claude] resolve = [node_a, node_b]。导出：icvs export --target claude rules.icvs > CLAUDE.md"
+
+[node: modularize]
+  type = action
+  content = "将规则拆分到多个文件：[include: './style.icvs']、[include: './security.icvs']"
+
+[node: add_condition]
+  type = action
+  content = "添加条件：[node: check] type = condition, if = $BRANCH == 'main', then = -> strict, else = -> relaxed。"
+
+[edge: install_cli -> create_first]
+[edge: create_first -> validate]
+[edge: validate -> add_edge]
+[edge: add_edge -> add_target]
+[edge: add_target -> modularize]
+[edge: modularize -> add_condition]
+
+[target: beginner]
+  resolve = [
+    install_cli, create_first, validate,
+    add_edge, add_target, modularize, add_condition
+  ]

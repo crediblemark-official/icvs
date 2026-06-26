@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "instructcanvas"
-version = "0.2.1"
+version = "0.2.2"
 description = "InstructCanvas - DAG-based instruction format for agentic AI tools"
 requires-python = ">=3.8"
 license = { text = "MIT" }

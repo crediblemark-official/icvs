@@ -1,0 +1,140 @@
+#project: "instructcanvas"
+
+# ============================================================
+# InstructCanvas — official documentation in .icvs format
+# ============================================================
+
+# ── Core Rules ──────────────────────────────────────────────
+
+[node: core_rules]
+  type = rule
+  content = "All .icvs files must form a valid DAG — no cycles allowed. The validator detects cycles using DFS."
+  severity = must
+
+[node: naming_convention]
+  type = rule
+  content = "Node IDs: alphanumeric, underscore, hyphen (^[a-zA-Z0-9_-]+$). Case-sensitive."
+  severity = must
+
+[node: utf8]
+  type = rule
+  content = ".icvs files must be UTF-8 encoded. BOM is not allowed."
+  severity = must
+
+[node: no_hidden]
+  type = rule
+  content = "No content allowed outside [node:], [edge:], [target:], [include:], or #project: blocks."
+  severity = must
+
+# ── Node Types ──────────────────────────────────────────────
+
+[node: node_types]
+  type = rule
+  content = "Five node types: rule (coding rules), blocklist (banned items), allowlist (permitted items), condition (conditional logic), action (agent commands)."
+  severity = must
+
+[node: node_type_rule]
+  type = rule
+  content = "type = rule: defines a coding rule. Attributes: content (string), severity (must|should|may)."
+  severity = should
+
+[node: node_type_blocklist]
+  type = rule
+  content = "type = blocklist: lists prohibited libraries/code. Attributes: content, trigger_on (import|install|run)."
+  severity = should
+
+[node: node_type_allowlist]
+  type = rule
+  content = "type = allowlist: lists permitted libraries/code. Attributes: content, trigger_on."
+  severity = should
+
+[node: node_type_condition]
+  type = rule
+  content = "type = condition: if/else logic based on $VARIABLE env. Attributes: if (operators: ==, !=, >=, <=, >, <), then ->, else ->."
+  severity = should
+
+[node: node_type_action]
+  type = rule
+  content = "type = action: commands that the agent must execute. Attributes: content."
+  severity = should
+
+# ── Edge & DAG ──────────────────────────────────────────────
+
+[node: edge_definition]
+  type = rule
+  content = "[edge: source -> target] — source must be a defined node, target must be a defined node."
+  severity = must
+
+[node: dag_requirement]
+  type = rule
+  content = "The entire graph must be a DAG (Directed Acyclic Graph). Cycles are rejected with error 'Cycle detected: a -> b -> c -> a'."
+  severity = must
+
+[node: implicit_edges]
+  type = rule
+  content = "Condition nodes (then/else) implicitly create edges. Separate [edge:] is not required but allowed for explicitness."
+  severity = may
+
+# ── Target System ──────────────────────────────────────────
+
+[node: target_system]
+  type = rule
+  content = "[target: name] defines a tool target. Attributes: resolve (list of included nodes), ignore (list of excluded nodes). ignore is a subset of resolve."
+  severity = must
+
+[node: multi_target]
+  type = rule
+  content = "A single file can have multiple targets. Example: [target: claude], [target: copilot], [target: cursor]. Each with different resolve/ignore."
+  severity = should
+
+# ── Include System ──────────────────────────────────────────
+
+[node: include_system]
+  type = rule
+  content = "[include: path] imports another .icvs file. Path is relative to the source file. Supports nested includes."
+  severity = must
+
+[node: include_circular]
+  type = rule
+  content = "Circular include (A includes B, B includes A) is detected and rejected with error 'Circular include detected'."
+  severity = must
+
+[node: include_merge]
+  type = rule
+  content = "Include merge rules: duplicate node IDs → error. Duplicate target names → error. Project name from the first file that has one."
+  severity = must
+
+# ── Inter-Node Edges (dependencies) ─────────────────────────
+
+[edge: naming_convention -> node_types]
+[edge: utf8 -> no_hidden]
+[edge: no_hidden -> core_rules]
+[edge: core_rules -> dag_requirement]
+[edge: dag_requirement -> edge_definition]
+[edge: edge_definition -> implicit_edges]
+[edge: node_types -> node_type_rule]
+[edge: node_types -> node_type_blocklist]
+[edge: node_types -> node_type_allowlist]
+[edge: node_types -> node_type_condition]
+[edge: node_types -> node_type_action]
+[edge: node_type_rule -> target_system]
+[edge: node_type_blocklist -> target_system]
+[edge: node_type_allowlist -> target_system]
+[edge: node_type_condition -> target_system]
+[edge: node_type_action -> target_system]
+[edge: target_system -> multi_target]
+[edge: multi_target -> include_system]
+[edge: include_system -> include_circular]
+[edge: include_circular -> include_merge]
+
+# ── Default Target ────────────────────────────────────────
+
+[target: all]
+  resolve = [
+    core_rules, naming_convention, utf8, no_hidden,
+    node_types, node_type_rule, node_type_blocklist,
+    node_type_allowlist, node_type_condition, node_type_action,
+    edge_definition, dag_requirement, implicit_edges,
+    target_system, multi_target,
+    include_system, include_circular, include_merge
+  ]

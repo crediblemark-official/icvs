@@ -1,0 +1,69 @@
+#project: "instructcanvas-dev"
+
+# ── Development Guide ───────────────────────────────────────
+
+[node: setup]
+  type = action
+  content = "Clone the repo, then: cargo build for binary, cargo test for test suite."
+
+[node: parser]
+  type = rule
+  content = "Parser: line-based recursive descent. Input text → tokens → AST Document. Tracks line numbers for error reporting."
+  severity = must
+
+[node: validator]
+  type = rule
+  content = "Validator: DFS cycle detection, Kahn's algorithm for topological sort. Checks orphan nodes, unresolved refs, duplicate IDs."
+  severity = must
+
+[node: resolver]
+  type = rule
+  content = "Resolver: resolve [include:] recursively with a visited set for circular detection. Merges nodes/edges/targets."
+  severity = must
+
+[node: exporter]
+  type = rule
+  content = "Exporter: Markdown (per-target + merge), DOT graph. DOT uses different colors per node type (rule=blue, blocklist=red, condition=yellow, action=purple)."
+  severity = must
+
+[node: wasm]
+  type = rule
+  content = "WASM: wasm-pack build wasm/ --target web. Exported functions: parse, validate, exportMarkdown, exportDot, exportMerge."
+  severity = should
+
+[node: python]
+  type = rule
+  content = "Python: maturin build --release in py/. pip install instructcanvas. API: icvs.parse(), icvs.validate(), icvs.export_markdown()."
+  severity = should
+
+[node: vscode]
+  type = rule
+  content = "VSCode: vsce package in vscode/. Syntax highlighting (TextMate grammar), validation on save, graph preview webview."
+  severity = should
+
+[node: testing]
+  type = rule
+  content = "Test: integration tests in tests/. .icvs fixtures for every scenario (valid, cycle, include, error, condition)."
+  severity = must
+
+[edge: setup -> parser]
+[edge: parser -> validator]
+[edge: validator -> resolver]
+[edge: resolver -> exporter]
+[edge: exporter -> wasm]
+[edge: exporter -> python]
+[edge: exporter -> vscode]
+[edge: wasm -> testing]
+[edge: python -> testing]
+[edge: vscode -> testing]
+
+[target: contributor]
+  resolve = [
+    setup, parser, validator, resolver,
+    exporter, wasm, python, vscode, testing
+  ]
+
+[target: core]
+  resolve = [
+    setup, parser, validator, resolver, exporter, testing
+  ]

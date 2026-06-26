@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 (2026-06-25)
+
+### Added
+- English & Mandarin translations (docs/*.en.*, docs/*.zh.*, README.en.md, README.zh.md)
+- README badges for crates.io / npm / PyPI
+
 ## 0.2.1 (2026-06-25)
 
 ### Added
